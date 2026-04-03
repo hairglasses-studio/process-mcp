@@ -17,8 +17,8 @@ import (
 func TestModuleRegistration(t *testing.T) {
 	m := &ProcessModule{}
 	tools := m.Tools()
-	if len(tools) != 6 {
-		t.Fatalf("expected 6 tools, got %d", len(tools))
+	if len(tools) != 8 {
+		t.Fatalf("expected 8 tools, got %d", len(tools))
 	}
 
 	reg := registry.NewToolRegistry()
@@ -26,13 +26,14 @@ func TestModuleRegistration(t *testing.T) {
 	srv := mcptest.NewServer(t, reg)
 
 	names := srv.ToolNames()
-	if len(names) != 6 {
-		t.Fatalf("expected 6 registered tools, got %d", len(names))
+	if len(names) != 8 {
+		t.Fatalf("expected 8 registered tools, got %d", len(names))
 	}
 
 	for _, want := range []string{
 		"ps_list", "ps_tree", "kill_process",
 		"port_list", "gpu_status", "system_info",
+		"investigate_port", "investigate_service",
 	} {
 		if !srv.HasTool(want) {
 			t.Errorf("missing tool: %s", want)
@@ -269,6 +270,74 @@ func TestSystemInfo(t *testing.T) {
 	}
 	if len(out.LoadAvg) != 3 {
 		t.Errorf("expected 3 load avg values, got %d", len(out.LoadAvg))
+	}
+}
+
+// ---------------------------------------------------------------------------
+// investigate_port
+// ---------------------------------------------------------------------------
+
+func TestInvestigatePort_InvalidPort(t *testing.T) {
+	td := findTool(t, "investigate_port")
+	for _, port := range []int{0, -1, 99999} {
+		req := makeReq(map[string]any{"port": port})
+		result, err := td.Handler(context.Background(), req)
+		if err != nil {
+			continue // error is expected
+		}
+		if result == nil || !result.IsError {
+			t.Errorf("expected error for port=%d", port)
+		}
+	}
+}
+
+func TestInvestigatePort_UnusedPort(t *testing.T) {
+	if _, err := exec.LookPath("ss"); err != nil {
+		t.Skip("ss not available")
+	}
+	td := findTool(t, "investigate_port")
+	req := makeReq(map[string]any{"port": 59999})
+	result, err := td.Handler(context.Background(), req)
+	// Should return NOT_FOUND error for unused port
+	if err == nil && result != nil && !result.IsError {
+		t.Error("expected error for unused port")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// investigate_service
+// ---------------------------------------------------------------------------
+
+func TestInvestigateService_EmptyUnit(t *testing.T) {
+	td := findTool(t, "investigate_service")
+	req := makeReq(map[string]any{"unit": ""})
+	result, err := td.Handler(context.Background(), req)
+	if err == nil && (result == nil || !result.IsError) {
+		t.Fatal("expected error for empty unit")
+	}
+}
+
+func TestInvestigateService_KnownUnit(t *testing.T) {
+	if _, err := exec.LookPath("systemctl"); err != nil {
+		t.Skip("systemctl not available")
+	}
+	td := findTool(t, "investigate_service")
+	req := makeReq(map[string]any{"unit": "dbus.service", "log_lines": 5})
+	result, err := td.Handler(context.Background(), req)
+	if err != nil {
+		t.Skipf("handler error (unit may not exist): %v", err)
+	}
+	if result == nil || result.IsError {
+		t.Skip("unit not available in this scope")
+	}
+
+	var out InvestigateServiceOutput
+	unmarshalResult(t, result, &out)
+	if out.Unit != "dbus.service" {
+		t.Errorf("expected unit=dbus.service, got %q", out.Unit)
+	}
+	if out.ActiveState == "" {
+		t.Error("active_state is empty")
 	}
 }
 
