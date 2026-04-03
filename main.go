@@ -170,6 +170,44 @@ type SystemInfoOutput struct {
 }
 
 // ---------------------------------------------------------------------------
+// investigate_port
+// ---------------------------------------------------------------------------
+
+type InvestigatePortInput struct {
+	Port     int `json:"port" jsonschema:"required,description=TCP port number to investigate"`
+	LogLines int `json:"log_lines,omitempty" jsonschema:"description=Number of journal log lines to fetch. Default 20."`
+}
+
+type InvestigatePortOutput struct {
+	Port          int          `json:"port"`
+	Process       *ProcessInfo `json:"process,omitempty"`
+	Tree          string       `json:"tree,omitempty"`
+	SystemdUnit   string       `json:"systemd_unit,omitempty"`
+	SystemdStatus string       `json:"systemd_status,omitempty"`
+	RecentLogs    string       `json:"recent_logs,omitempty"`
+}
+
+// ---------------------------------------------------------------------------
+// investigate_service
+// ---------------------------------------------------------------------------
+
+type InvestigateServiceInput struct {
+	Unit     string `json:"unit" jsonschema:"required,description=Systemd unit name to investigate"`
+	System   bool   `json:"system,omitempty" jsonschema:"description=Target system scope instead of user scope. Default: user scope."`
+	LogLines int    `json:"log_lines,omitempty" jsonschema:"description=Number of journal log lines to fetch. Default 20."`
+}
+
+type InvestigateServiceOutput struct {
+	Unit        string       `json:"unit"`
+	ActiveState string       `json:"active_state"`
+	SubState    string       `json:"sub_state"`
+	MainPID     int          `json:"main_pid,omitempty"`
+	Process     *ProcessInfo `json:"process,omitempty"`
+	Ports       []PortEntry  `json:"ports,omitempty"`
+	RecentLogs  string       `json:"recent_logs,omitempty"`
+}
+
+// ---------------------------------------------------------------------------
 // ProcessModule
 // ---------------------------------------------------------------------------
 
@@ -554,6 +592,223 @@ func (m *ProcessModule) Tools() []registry.ToolDefinition {
 				}
 
 				return info, nil
+			},
+		),
+
+		// ---------------------------------------------------------------
+		// investigate_port (composed)
+		// ---------------------------------------------------------------
+		handler.TypedHandler[InvestigatePortInput, InvestigatePortOutput](
+			"investigate_port",
+			"Investigate a TCP port: find the listening process, show its tree, check systemd unit status, and fetch recent logs. Single tool replaces port_list + ps_list + systemd_status + systemd_logs.",
+			func(_ context.Context, input InvestigatePortInput) (InvestigatePortOutput, error) {
+				if input.Port <= 0 || input.Port > 65535 {
+					return InvestigatePortOutput{}, fmt.Errorf("[%s] port must be 1-65535", handler.ErrInvalidParam)
+				}
+				logLines := input.LogLines
+				if logLines <= 0 {
+					logLines = 20
+				}
+
+				result := InvestigatePortOutput{Port: input.Port}
+
+				// Step 1: Find process on port via ss
+				ssOut, _, _ := runCmd("ss", "-tlnp", fmt.Sprintf("sport = :%d", input.Port))
+				var pid int
+				for _, line := range strings.Split(ssOut, "\n") {
+					if !strings.Contains(line, "LISTEN") {
+						continue
+					}
+					// Extract pid from users:(("name",pid=NNN,...))
+					if idx := strings.Index(line, "pid="); idx >= 0 {
+						pidStr := line[idx+4:]
+						if end := strings.IndexAny(pidStr, ",)"); end > 0 {
+							pid, _ = strconv.Atoi(pidStr[:end])
+						}
+					}
+				}
+
+				if pid == 0 {
+					return result, fmt.Errorf("[%s] no process listening on port %d", handler.ErrNotFound, input.Port)
+				}
+
+				// Step 2: Get process info
+				psOut, _, _ := runCmd("ps", "-p", strconv.Itoa(pid), "-o", "user,pid,pcpu,pmem,vsz,rss,tty,stat,start,time,command", "--no-headers")
+				if psOut != "" {
+					fields := strings.Fields(psOut)
+					if len(fields) >= 11 {
+						cpuVal, _ := strconv.ParseFloat(fields[2], 64)
+						memVal, _ := strconv.ParseFloat(fields[3], 64)
+						vszVal, _ := strconv.Atoi(fields[4])
+						rssVal, _ := strconv.Atoi(fields[5])
+						result.Process = &ProcessInfo{
+							User:    fields[0],
+							PID:     pid,
+							CPU:     cpuVal,
+							Mem:     memVal,
+							VSZ:     vszVal,
+							RSS:     rssVal,
+							TTY:     fields[6],
+							Stat:    fields[7],
+							Start:   fields[8],
+							Time:    fields[9],
+							Command: strings.Join(fields[10:], " "),
+						}
+					}
+				}
+
+				// Step 3: Process tree
+				treeOut, _, err := runCmd("pstree", "-p", strconv.Itoa(pid))
+				if err == nil {
+					result.Tree = treeOut
+				}
+
+				// Step 4: Find systemd unit for PID
+				unitOut, _, _ := runCmd("systemctl", "--user", "status", strconv.Itoa(pid))
+				if unitOut != "" {
+					for _, line := range strings.Split(unitOut, "\n") {
+						line = strings.TrimSpace(line)
+						if strings.HasSuffix(line, ".service") || strings.Contains(line, ".service ") {
+							// First line usually contains unit name
+							parts := strings.Fields(line)
+							for _, p := range parts {
+								if strings.HasSuffix(p, ".service") {
+									result.SystemdUnit = p
+									break
+								}
+							}
+							if result.SystemdUnit != "" {
+								break
+							}
+						}
+					}
+					result.SystemdStatus = unitOut
+				}
+
+				// Step 5: Journal logs if we found a unit
+				if result.SystemdUnit != "" {
+					logsOut, _, _ := runCmd("journalctl", "--user-unit", result.SystemdUnit,
+						"-n", strconv.Itoa(logLines), "--no-pager")
+					result.RecentLogs = logsOut
+				}
+
+				return result, nil
+			},
+		),
+
+		// ---------------------------------------------------------------
+		// investigate_service (composed)
+		// ---------------------------------------------------------------
+		handler.TypedHandler[InvestigateServiceInput, InvestigateServiceOutput](
+			"investigate_service",
+			"Investigate a systemd service: get status, find its processes, check its ports, and fetch recent logs. Single tool replaces systemd_status + ps_list + port_list + systemd_logs.",
+			func(_ context.Context, input InvestigateServiceInput) (InvestigateServiceOutput, error) {
+				if input.Unit == "" {
+					return InvestigateServiceOutput{}, fmt.Errorf("[%s] unit is required", handler.ErrInvalidParam)
+				}
+				logLines := input.LogLines
+				if logLines <= 0 {
+					logLines = 20
+				}
+
+				scope := "--user"
+				journalFlag := "--user-unit"
+				if input.System {
+					scope = ""
+					journalFlag = "-u"
+				}
+
+				result := InvestigateServiceOutput{Unit: input.Unit}
+
+				// Step 1: Get unit status
+				var statusArgs []string
+				if scope != "" {
+					statusArgs = append(statusArgs, scope)
+				}
+				statusArgs = append(statusArgs, "show",
+					"--property=ActiveState,SubState,MainPID",
+					input.Unit)
+				statusOut, _, _ := runCmd("systemctl", statusArgs...)
+				for _, line := range strings.Split(statusOut, "\n") {
+					parts := strings.SplitN(line, "=", 2)
+					if len(parts) != 2 {
+						continue
+					}
+					switch parts[0] {
+					case "ActiveState":
+						result.ActiveState = parts[1]
+					case "SubState":
+						result.SubState = parts[1]
+					case "MainPID":
+						result.MainPID, _ = strconv.Atoi(parts[1])
+					}
+				}
+
+				// Step 2: Get process info for MainPID
+				if result.MainPID > 0 {
+					psOut, _, _ := runCmd("ps", "-p", strconv.Itoa(result.MainPID),
+						"-o", "user,pid,pcpu,pmem,vsz,rss,tty,stat,start,time,command", "--no-headers")
+					if psOut != "" {
+						fields := strings.Fields(psOut)
+						if len(fields) >= 11 {
+							cpuVal, _ := strconv.ParseFloat(fields[2], 64)
+							memVal, _ := strconv.ParseFloat(fields[3], 64)
+							vszVal, _ := strconv.Atoi(fields[4])
+							rssVal, _ := strconv.Atoi(fields[5])
+							result.Process = &ProcessInfo{
+								User:    fields[0],
+								PID:     result.MainPID,
+								CPU:     cpuVal,
+								Mem:     memVal,
+								VSZ:     vszVal,
+								RSS:     rssVal,
+								TTY:     fields[6],
+								Stat:    fields[7],
+								Start:   fields[8],
+								Time:    fields[9],
+								Command: strings.Join(fields[10:], " "),
+							}
+						}
+					}
+
+					// Step 3: Check ports used by this PID
+					ssOut, _, _ := runCmd("ss", "-tlnp")
+					pidStr := strconv.Itoa(result.MainPID)
+					for _, line := range strings.Split(ssOut, "\n") {
+						if !strings.Contains(line, pidStr) {
+							continue
+						}
+						fields := strings.Fields(line)
+						if len(fields) < 4 || fields[0] != "LISTEN" {
+							continue
+						}
+						localAddr := fields[3]
+						lastColon := strings.LastIndex(localAddr, ":")
+						if lastColon < 0 {
+							continue
+						}
+						portNum, err := strconv.Atoi(localAddr[lastColon+1:])
+						if err != nil {
+							continue
+						}
+						result.Ports = append(result.Ports, PortEntry{
+							Protocol: "tcp",
+							Address:  localAddr[:lastColon],
+							Port:     portNum,
+						})
+					}
+				}
+
+				if result.Ports == nil {
+					result.Ports = []PortEntry{}
+				}
+
+				// Step 4: Journal logs
+				logsOut, _, _ := runCmd("journalctl", journalFlag, input.Unit,
+					"-n", strconv.Itoa(logLines), "--no-pager")
+				result.RecentLogs = logsOut
+
+				return result, nil
 			},
 		),
 	}

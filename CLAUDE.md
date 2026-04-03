@@ -10,7 +10,7 @@ go test ./... -count=1
 go install .
 ```
 
-## Tools (6)
+## Tools (8)
 
 ### Process Management (3)
 - `ps_list` — List processes sorted by CPU/mem/pid, filter by command substring
@@ -25,6 +25,10 @@ go install .
 
 ### System (1)
 - `system_info` — Hostname, kernel, uptime, load average, CPU count, memory, swap
+
+### Composed Debugging (2)
+- `investigate_port` — **Composed**: port → process → tree → systemd unit → logs. Single tool replaces 4+ sequential calls
+- `investigate_service` — **Composed**: systemd status → process info → ports → logs. Single tool replaces 3-4 sequential calls
 
 ## Key Patterns
 - Reads directly from /proc for system_info (no shell overhead)
