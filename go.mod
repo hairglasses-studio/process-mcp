@@ -2,7 +2,7 @@ module github.com/hairglasses-studio/process-mcp
 
 go 1.26.1
 
-require github.com/hairglasses-studio/mcpkit v0.0.0-20260402085537-d0dd780ea214
+require github.com/hairglasses-studio/mcpkit v0.1.0
 
 require (
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
@@ -22,5 +22,3 @@ require (
 	golang.org/x/sys v0.41.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/hairglasses-studio/mcpkit => ../mcpkit
