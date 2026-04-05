@@ -4,11 +4,19 @@ import (
 	"context"
 	"encoding/json"
 	"os/exec"
+	"runtime"
 	"testing"
 
 	"github.com/hairglasses-studio/mcpkit/mcptest"
 	"github.com/hairglasses-studio/mcpkit/registry"
 )
+
+func requireLinuxPS(t *testing.T) {
+	t.Helper()
+	if runtime.GOOS != "linux" {
+		t.Skip("ps --sort requires Linux")
+	}
+}
 
 // ---------------------------------------------------------------------------
 // Registration
@@ -55,6 +63,7 @@ func TestContextRegistries(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestPsList_Default(t *testing.T) {
+	requireLinuxPS(t)
 	td := findTool(t, "ps_list")
 	req := makeReq(nil)
 	result, err := td.Handler(context.Background(), req)
@@ -85,6 +94,7 @@ func TestPsList_InvalidSort(t *testing.T) {
 }
 
 func TestPsList_SortMem(t *testing.T) {
+	requireLinuxPS(t)
 	td := findTool(t, "ps_list")
 	req := makeReq(map[string]any{"sort_by": "mem"})
 	result, err := td.Handler(context.Background(), req)
@@ -99,6 +109,7 @@ func TestPsList_SortMem(t *testing.T) {
 }
 
 func TestPsList_Filter(t *testing.T) {
+	requireLinuxPS(t)
 	td := findTool(t, "ps_list")
 	req := makeReq(map[string]any{"filter": "process-mcp.test", "limit": 50})
 	result, err := td.Handler(context.Background(), req)
@@ -114,6 +125,7 @@ func TestPsList_Filter(t *testing.T) {
 }
 
 func TestPsList_Limit(t *testing.T) {
+	requireLinuxPS(t)
 	td := findTool(t, "ps_list")
 	req := makeReq(map[string]any{"limit": 3})
 	result, err := td.Handler(context.Background(), req)
@@ -253,6 +265,9 @@ func TestGpuStatus(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestSystemInfo(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("system_info reads /proc which requires Linux")
+	}
 	td := findTool(t, "system_info")
 	req := makeReq(nil)
 	result, err := td.Handler(context.Background(), req)
