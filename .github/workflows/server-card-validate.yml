@@ -1,0 +1,28 @@
+name: Validate Server Card
+on:
+  push:
+    paths: ['.well-known/mcp.json']
+  pull_request:
+    paths: ['.well-known/mcp.json']
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate JSON syntax
+        run: python3 -m json.tool .well-known/mcp.json > /dev/null
+
+      - name: Check required fields
+        run: |
+          python3 -c "
+          import json, sys
+          card = json.load(open('.well-known/mcp.json'))
+          required = ['name', 'version', 'description']
+          missing = [f for f in required if f not in card]
+          if missing:
+              print(f'Missing required fields: {missing}', file=sys.stderr)
+              sys.exit(1)
+          print(f'Server card valid: {card[\"name\"]} v{card[\"version\"]}')
+          "
