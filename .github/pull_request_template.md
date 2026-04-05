@@ -1,20 +1,13 @@
 ## Summary
-
-Brief description of changes.
+<!-- Brief description of the changes -->
 
 ## Changes
-
 - 
 
 ## Testing
-
-- [ ] `go test ./... -count=1 -race` passes
+- [ ] `go build ./...` passes
 - [ ] `go vet ./...` passes
-- [ ] New tests added for new functionality
-- [ ] Existing tests updated if behavior changed
+- [ ] `go test ./... -count=1` passes
 
-## Checklist
-
-- [ ] Code follows existing patterns (middleware signature, TypedHandler, error codes)
-- [ ] Package stays within its dependency layer
-- [ ] Documentation updated (godoc, README, CLAUDE.md if applicable)
+## Related Issues
+<!-- Fixes #123, Closes #456 -->
