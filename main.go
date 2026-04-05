@@ -313,7 +313,7 @@ func (m *ProcessModule) Tools() []registry.ToolDefinition {
 			}
 
 			var filtered []string
-			for _, line := range strings.Split(out, "\n") {
+			for line := range strings.SplitSeq(out, "\n") {
 				if strings.Contains(line, pidStr) {
 					filtered = append(filtered, line)
 				}
@@ -462,7 +462,7 @@ func (m *ProcessModule) Tools() []registry.ToolDefinition {
 
 			out, _, err = runCmd("nvidia-smi", "--query-compute-apps=pid,name,used_memory", "--format=csv,noheader,nounits")
 			if err == nil && out != "" {
-				for _, line := range strings.Split(out, "\n") {
+				for line := range strings.SplitSeq(out, "\n") {
 					pfields := strings.Split(line, ", ")
 					if len(pfields) >= 3 {
 						pid, _ := strconv.Atoi(strings.TrimSpace(pfields[0]))
@@ -518,7 +518,7 @@ func (m *ProcessModule) Tools() []registry.ToolDefinition {
 				}
 			}
 			if raw, err := readProcFile("cpuinfo"); err == nil {
-				for _, line := range strings.Split(raw, "\n") {
+				for line := range strings.SplitSeq(raw, "\n") {
 					if strings.HasPrefix(line, "processor") {
 						info.CPUCount++
 					}
@@ -526,7 +526,7 @@ func (m *ProcessModule) Tools() []registry.ToolDefinition {
 			}
 			if raw, err := readProcFile("meminfo"); err == nil {
 				memMap := make(map[string]int)
-				for _, line := range strings.Split(raw, "\n") {
+				for line := range strings.SplitSeq(raw, "\n") {
 					if strings.HasPrefix(line, "MemTotal:") ||
 						strings.HasPrefix(line, "MemAvailable:") ||
 						strings.HasPrefix(line, "SwapTotal:") ||
@@ -563,12 +563,12 @@ func (m *ProcessModule) Tools() []registry.ToolDefinition {
 			result := InvestigatePortOutput{Port: input.Port}
 			ssOut, _, _ := runCmd("ss", "-tlnp", fmt.Sprintf("sport = :%d", input.Port))
 			var pid int
-			for _, line := range strings.Split(ssOut, "\n") {
+			for line := range strings.SplitSeq(ssOut, "\n") {
 				if !strings.Contains(line, "LISTEN") {
 					continue
 				}
-				if idx := strings.Index(line, "pid="); idx >= 0 {
-					pidStr := line[idx+4:]
+				if _, after, ok := strings.Cut(line, "pid="); ok {
+					pidStr := after
 					if end := strings.IndexAny(pidStr, ",)"); end > 0 {
 						pid, _ = strconv.Atoi(pidStr[:end])
 					}
@@ -609,11 +609,11 @@ func (m *ProcessModule) Tools() []registry.ToolDefinition {
 
 			unitOut, _, _ := runCmd("systemctl", "--user", "status", strconv.Itoa(pid))
 			if unitOut != "" {
-				for _, line := range strings.Split(unitOut, "\n") {
+				for line := range strings.SplitSeq(unitOut, "\n") {
 					line = strings.TrimSpace(line)
 					if strings.HasSuffix(line, ".service") || strings.Contains(line, ".service ") {
-						parts := strings.Fields(line)
-						for _, p := range parts {
+						parts := strings.FieldsSeq(line)
+						for p := range parts {
 							if strings.HasSuffix(p, ".service") {
 								result.SystemdUnit = p
 								break
@@ -663,7 +663,7 @@ func (m *ProcessModule) Tools() []registry.ToolDefinition {
 			}
 			statusArgs = append(statusArgs, "show", "--property=ActiveState,SubState,MainPID", input.Unit)
 			statusOut, _, _ := runCmd("systemctl", statusArgs...)
-			for _, line := range strings.Split(statusOut, "\n") {
+			for line := range strings.SplitSeq(statusOut, "\n") {
 				parts := strings.SplitN(line, "=", 2)
 				if len(parts) != 2 {
 					continue
@@ -705,7 +705,7 @@ func (m *ProcessModule) Tools() []registry.ToolDefinition {
 
 				ssOut, _, _ := runCmd("ss", "-tlnp")
 				pidStr := strconv.Itoa(result.MainPID)
-				for _, line := range strings.Split(ssOut, "\n") {
+				for line := range strings.SplitSeq(ssOut, "\n") {
 					if !strings.Contains(line, pidStr) {
 						continue
 					}
