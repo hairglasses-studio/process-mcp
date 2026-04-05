@@ -1,0 +1,29 @@
+{
+  "name": "io.github.hairglasses-studio.process-mcp",
+  "description": "Process inspection and debugging with composed investigation workflows",
+  "version": "1.0.0",
+  "homepage": "https://github.com/hairglasses-studio/process-mcp",
+  "license": "MIT",
+  "organization": "hairglasses-studio",
+  "repository": "https://github.com/hairglasses-studio/process-mcp",
+  "transport": ["stdio"],
+  "capabilities": {
+    "tools": true,
+    "resources": false,
+    "prompts": false
+  },
+  "tools": [
+    { "name": "ps_list", "description": "List processes sorted by CPU/mem/pid, filter by command substring" },
+    { "name": "ps_tree", "description": "Show process tree for a PID (pstree, falls back to ps --forest)" },
+    { "name": "kill_process", "description": "Send signal to process (TERM, KILL, HUP, INT, USR1, USR2, STOP, CONT)" },
+    { "name": "port_list", "description": "List listening TCP ports with process info via ss" },
+    { "name": "gpu_status", "description": "NVIDIA GPU status: temp, utilization, memory, power, running processes" },
+    { "name": "system_info", "description": "Hostname, kernel, uptime, load average, CPU count, memory, swap" },
+    { "name": "investigate_port", "description": "Port, process, tree, systemd unit, logs -- single tool replaces 4+ calls" },
+    { "name": "investigate_service", "description": "Systemd status, process info, ports, logs -- single tool replaces 3-4 calls" }
+  ],
+  "tags": ["linux", "process", "debugging", "devops"],
+  "tool_count": 8,
+  "categories": ["process-management", "debugging"],
+  "generated_at": "2026-04-05T00:00:00Z"
+}
