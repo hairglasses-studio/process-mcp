@@ -1,0 +1,29 @@
+version: 2
+project_name: process-mcp
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - binary: process-mcp
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.ShortCommit}}
+
+archives:
+  - formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+checksum:
+  algorithm: sha256
+
+release:
+  github:
+    owner: hairglasses-studio
+    name: process-mcp
