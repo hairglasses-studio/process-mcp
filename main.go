@@ -250,36 +250,14 @@ func (m *ProcessModule) Tools() []registry.ToolDefinition {
 				if i == 0 {
 					continue
 				}
-				fields := strings.Fields(line)
-				if len(fields) < 11 {
+				p, ok := parsePsLine(line)
+				if !ok {
 					continue
 				}
-
-				command := strings.Join(fields[10:], " ")
-				if input.Filter != "" && !strings.Contains(strings.ToLower(command), strings.ToLower(input.Filter)) {
+				if input.Filter != "" && !strings.Contains(strings.ToLower(p.Command), strings.ToLower(input.Filter)) {
 					continue
 				}
-
-				pid, _ := strconv.Atoi(fields[1])
-				cpu, _ := strconv.ParseFloat(fields[2], 64)
-				mem, _ := strconv.ParseFloat(fields[3], 64)
-				vsz, _ := strconv.Atoi(fields[4])
-				rss, _ := strconv.Atoi(fields[5])
-
-				processes = append(processes, ProcessInfo{
-					User:    fields[0],
-					PID:     pid,
-					CPU:     cpu,
-					Mem:     mem,
-					VSZ:     vsz,
-					RSS:     rss,
-					TTY:     fields[6],
-					Stat:    fields[7],
-					Start:   fields[8],
-					Time:    fields[9],
-					Command: command,
-				})
-
+				processes = append(processes, p)
 				if len(processes) >= limit {
 					break
 				}
@@ -379,48 +357,7 @@ func (m *ProcessModule) Tools() []registry.ToolDefinition {
 				return PortListOutput{}, fmt.Errorf("[%s] ss command failed: %w", handler.ErrAPIError, err)
 			}
 
-			lines := strings.Split(out, "\n")
-			var ports []PortEntry
-			for i, line := range lines {
-				if i < 1 {
-					continue
-				}
-				fields := strings.Fields(line)
-				if len(fields) < 5 || fields[0] != "LISTEN" {
-					continue
-				}
-
-				localAddr := fields[3]
-				lastColon := strings.LastIndex(localAddr, ":")
-				if lastColon < 0 {
-					continue
-				}
-
-				addr := localAddr[:lastColon]
-				portNum, err := strconv.Atoi(localAddr[lastColon+1:])
-				if err != nil {
-					continue
-				}
-				if input.Port > 0 && portNum != input.Port {
-					continue
-				}
-
-				process := ""
-				for _, f := range fields {
-					if strings.HasPrefix(f, "users:") {
-						process = f
-						break
-					}
-				}
-
-				ports = append(ports, PortEntry{
-					Protocol: "tcp",
-					Address:  addr,
-					Port:     portNum,
-					Process:  process,
-				})
-			}
-
+			ports := parseSsLines(out, input.Port)
 			if ports == nil {
 				ports = []PortEntry{}
 			}
@@ -446,37 +383,13 @@ func (m *ProcessModule) Tools() []registry.ToolDefinition {
 				return GpuStatusOutput{}, fmt.Errorf("[%s] nvidia-smi query failed: %s", handler.ErrAPIError, stderr)
 			}
 
-			fields := strings.Split(out, ", ")
-			if len(fields) >= 7 {
-				temp, _ := strconv.Atoi(strings.TrimSpace(fields[2]))
-				util, _ := strconv.Atoi(strings.TrimSpace(fields[3]))
-				memUsed, _ := strconv.Atoi(strings.TrimSpace(fields[4]))
-				memTotal, _ := strconv.Atoi(strings.TrimSpace(fields[5]))
-				power, _ := strconv.ParseFloat(strings.TrimSpace(fields[6]), 64)
-
-				result.GPU = &GpuInfo{
-					DriverVersion: strings.TrimSpace(fields[0]),
-					Name:          strings.TrimSpace(fields[1]),
-					Temperature:   temp,
-					Utilization:   util,
-					MemoryUsed:    memUsed,
-					MemoryTotal:   memTotal,
-					PowerDraw:     power,
-				}
-			}
+			result.GPU = parseGpuInfo(out)
 
 			out, _, err = runCmd("nvidia-smi", "--query-compute-apps=pid,name,used_memory", "--format=csv,noheader,nounits")
 			if err == nil && out != "" {
 				for line := range strings.SplitSeq(out, "\n") {
-					pfields := strings.Split(line, ", ")
-					if len(pfields) >= 3 {
-						pid, _ := strconv.Atoi(strings.TrimSpace(pfields[0]))
-						mem, _ := strconv.Atoi(strings.TrimSpace(pfields[2]))
-						result.Processes = append(result.Processes, GpuProcess{
-							PID:        pid,
-							Name:       strings.TrimSpace(pfields[1]),
-							MemoryUsed: mem,
-						})
+					if gp, ok := parseGpuProcessLine(line); ok {
+						result.Processes = append(result.Processes, gp)
 					}
 				}
 			}
@@ -497,57 +410,23 @@ func (m *ProcessModule) Tools() []registry.ToolDefinition {
 			info.Hostname, _ = os.Hostname()
 
 			if ver, err := readProcFile("version"); err == nil {
-				fields := strings.Fields(ver)
-				if len(fields) >= 3 {
-					info.Kernel = fields[2]
-				}
+				info.Kernel = parseKernelVersion(ver)
 			}
 			if raw, err := readProcFile("uptime"); err == nil {
-				fields := strings.Fields(raw)
-				if len(fields) >= 1 {
-					secs, _ := strconv.ParseFloat(fields[0], 64)
-					totalSecs := int(secs)
-					days := totalSecs / 86400
-					hours := (totalSecs % 86400) / 3600
-					mins := (totalSecs % 3600) / 60
-					info.Uptime = fmt.Sprintf("%dd %dh %dm", days, hours, mins)
-				}
+				info.Uptime = parseUptime(raw)
 			}
 			if raw, err := readProcFile("loadavg"); err == nil {
-				fields := strings.Fields(raw)
-				if len(fields) >= 3 {
-					info.LoadAvg = make([]float64, 3)
-					info.LoadAvg[0], _ = strconv.ParseFloat(fields[0], 64)
-					info.LoadAvg[1], _ = strconv.ParseFloat(fields[1], 64)
-					info.LoadAvg[2], _ = strconv.ParseFloat(fields[2], 64)
-				}
+				info.LoadAvg = parseLoadAvg(raw)
 			}
 			if raw, err := readProcFile("cpuinfo"); err == nil {
-				for line := range strings.SplitSeq(raw, "\n") {
-					if strings.HasPrefix(line, "processor") {
-						info.CPUCount++
-					}
-				}
+				info.CPUCount = parseCpuCount(raw)
 			}
 			if raw, err := readProcFile("meminfo"); err == nil {
-				memMap := make(map[string]int)
-				for line := range strings.SplitSeq(raw, "\n") {
-					if strings.HasPrefix(line, "MemTotal:") ||
-						strings.HasPrefix(line, "MemAvailable:") ||
-						strings.HasPrefix(line, "SwapTotal:") ||
-						strings.HasPrefix(line, "SwapFree:") {
-						parts := strings.Fields(line)
-						if len(parts) >= 2 {
-							val, _ := strconv.Atoi(parts[1])
-							key := strings.TrimSuffix(parts[0], ":")
-							memMap[key] = val
-						}
-					}
-				}
-				info.MemTotalMB = memMap["MemTotal"] / 1024
-				info.MemAvailMB = memMap["MemAvailable"] / 1024
-				info.SwapTotalMB = memMap["SwapTotal"] / 1024
-				info.SwapUsedMB = (memMap["SwapTotal"] - memMap["SwapFree"]) / 1024
+				memTotal, memAvail, swapTotal, swapFree := parseMemInfo(raw)
+				info.MemTotalMB = memTotal / 1024
+				info.MemAvailMB = memAvail / 1024
+				info.SwapTotalMB = swapTotal / 1024
+				info.SwapUsedMB = (swapTotal - swapFree) / 1024
 			}
 			return info, nil
 		},
@@ -572,11 +451,9 @@ func (m *ProcessModule) Tools() []registry.ToolDefinition {
 				if !strings.Contains(line, "LISTEN") {
 					continue
 				}
-				if _, after, ok := strings.Cut(line, "pid="); ok {
-					pidStr := after
-					if end := strings.IndexAny(pidStr, ",)"); end > 0 {
-						pid, _ = strconv.Atoi(pidStr[:end])
-					}
+				if p := extractPidFromSsLine(line); p > 0 {
+					pid = p
+					break
 				}
 			}
 			if pid == 0 {
@@ -585,25 +462,8 @@ func (m *ProcessModule) Tools() []registry.ToolDefinition {
 
 			psOut, _, _ := runCmd("ps", "-p", strconv.Itoa(pid), "-o", "user,pid,pcpu,pmem,vsz,rss,tty,stat,start,time,command", "--no-headers")
 			if psOut != "" {
-				fields := strings.Fields(psOut)
-				if len(fields) >= 11 {
-					cpuVal, _ := strconv.ParseFloat(fields[2], 64)
-					memVal, _ := strconv.ParseFloat(fields[3], 64)
-					vszVal, _ := strconv.Atoi(fields[4])
-					rssVal, _ := strconv.Atoi(fields[5])
-					result.Process = &ProcessInfo{
-						User:    fields[0],
-						PID:     pid,
-						CPU:     cpuVal,
-						Mem:     memVal,
-						VSZ:     vszVal,
-						RSS:     rssVal,
-						TTY:     fields[6],
-						Stat:    fields[7],
-						Start:   fields[8],
-						Time:    fields[9],
-						Command: strings.Join(fields[10:], " "),
-					}
+				if p, ok := parsePsLine(psOut); ok {
+					result.Process = &p
 				}
 			}
 
@@ -614,21 +474,7 @@ func (m *ProcessModule) Tools() []registry.ToolDefinition {
 
 			unitOut, _, _ := runCmd("systemctl", "--user", "status", strconv.Itoa(pid))
 			if unitOut != "" {
-				for line := range strings.SplitSeq(unitOut, "\n") {
-					line = strings.TrimSpace(line)
-					if strings.HasSuffix(line, ".service") || strings.Contains(line, ".service ") {
-						parts := strings.FieldsSeq(line)
-						for p := range parts {
-							if strings.HasSuffix(p, ".service") {
-								result.SystemdUnit = p
-								break
-							}
-						}
-						if result.SystemdUnit != "" {
-							break
-						}
-					}
-				}
+				result.SystemdUnit = extractSystemdUnit(unitOut)
 				result.SystemdStatus = unitOut
 			}
 			if result.SystemdUnit != "" {
@@ -668,71 +514,21 @@ func (m *ProcessModule) Tools() []registry.ToolDefinition {
 			}
 			statusArgs = append(statusArgs, "show", "--property=ActiveState,SubState,MainPID", input.Unit)
 			statusOut, _, _ := runCmd("systemctl", statusArgs...)
-			for line := range strings.SplitSeq(statusOut, "\n") {
-				parts := strings.SplitN(line, "=", 2)
-				if len(parts) != 2 {
-					continue
-				}
-				switch parts[0] {
-				case "ActiveState":
-					result.ActiveState = parts[1]
-				case "SubState":
-					result.SubState = parts[1]
-				case "MainPID":
-					result.MainPID, _ = strconv.Atoi(parts[1])
-				}
-			}
+			props := parseSystemdProperties(statusOut)
+			result.ActiveState = props["ActiveState"]
+			result.SubState = props["SubState"]
+			result.MainPID, _ = strconv.Atoi(props["MainPID"])
 
 			if result.MainPID > 0 {
 				psOut, _, _ := runCmd("ps", "-p", strconv.Itoa(result.MainPID), "-o", "user,pid,pcpu,pmem,vsz,rss,tty,stat,start,time,command", "--no-headers")
 				if psOut != "" {
-					fields := strings.Fields(psOut)
-					if len(fields) >= 11 {
-						cpuVal, _ := strconv.ParseFloat(fields[2], 64)
-						memVal, _ := strconv.ParseFloat(fields[3], 64)
-						vszVal, _ := strconv.Atoi(fields[4])
-						rssVal, _ := strconv.Atoi(fields[5])
-						result.Process = &ProcessInfo{
-							User:    fields[0],
-							PID:     result.MainPID,
-							CPU:     cpuVal,
-							Mem:     memVal,
-							VSZ:     vszVal,
-							RSS:     rssVal,
-							TTY:     fields[6],
-							Stat:    fields[7],
-							Start:   fields[8],
-							Time:    fields[9],
-							Command: strings.Join(fields[10:], " "),
-						}
+					if p, ok := parsePsLine(psOut); ok {
+						result.Process = &p
 					}
 				}
 
 				ssOut, _, _ := runCmd("ss", "-tlnp")
-				pidStr := strconv.Itoa(result.MainPID)
-				for line := range strings.SplitSeq(ssOut, "\n") {
-					if !strings.Contains(line, pidStr) {
-						continue
-					}
-					fields := strings.Fields(line)
-					if len(fields) < 4 || fields[0] != "LISTEN" {
-						continue
-					}
-					localAddr := fields[3]
-					lastColon := strings.LastIndex(localAddr, ":")
-					if lastColon < 0 {
-						continue
-					}
-					portNum, err := strconv.Atoi(localAddr[lastColon+1:])
-					if err != nil {
-						continue
-					}
-					result.Ports = append(result.Ports, PortEntry{
-						Protocol: "tcp",
-						Address:  localAddr[:lastColon],
-						Port:     portNum,
-					})
-				}
+				result.Ports = filterSsPortsByPid(ssOut, strconv.Itoa(result.MainPID))
 			}
 
 			if result.Ports == nil {
