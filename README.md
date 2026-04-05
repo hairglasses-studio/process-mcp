@@ -3,7 +3,7 @@
 [![Go](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go&logoColor=white)](https://go.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-MCP server for Linux process inspection and debugging. Gives AI assistants the ability to list processes, investigate ports, check GPU status, and debug services — including composed tools that chain multiple operations into a single call.
+MCP server for Linux process inspection and debugging. Gives AI assistants like Codex or Claude Code the ability to list processes, investigate ports, check GPU status, and debug services — including composed tools that chain multiple operations into a single call.
 
 Built with [mcpkit](https://github.com/hairglasses-studio/mcpkit) using stdio transport.
 
@@ -23,7 +23,7 @@ go build -o process-mcp .
 
 ## Configure
 
-Add to your Claude Code MCP config (`.mcp.json`):
+Add to your MCP client config (for example Codex or Claude Code):
 
 ```json
 {

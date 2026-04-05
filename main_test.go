@@ -41,6 +41,15 @@ func TestModuleRegistration(t *testing.T) {
 	}
 }
 
+func TestContextRegistries(t *testing.T) {
+	if got := buildProcessResourceRegistry().ResourceCount(); got != 1 {
+		t.Fatalf("expected 1 process resource, got %d", got)
+	}
+	if got := buildProcessPromptRegistry().PromptCount(); got != 1 {
+		t.Fatalf("expected 1 process prompt, got %d", got)
+	}
+}
+
 // ---------------------------------------------------------------------------
 // ps_list
 // ---------------------------------------------------------------------------
