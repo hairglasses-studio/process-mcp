@@ -344,18 +344,23 @@ func (m *ProcessModule) Tools() []registry.ToolDefinition {
 				return KillProcessOutput{}, fmt.Errorf("[%s] invalid signal %q; must be one of: TERM, KILL, HUP, INT, USR1, USR2, STOP, CONT", handler.ErrInvalidParam, sig)
 			}
 
+			slog.Info("sending signal", "pid", input.PID, "signal", sig)
 			pidStr := strconv.Itoa(input.PID)
 			_, stderr, err := runCmd("kill", "-"+sig, pidStr)
 			if err != nil {
 				if strings.Contains(stderr, "No such process") {
+					slog.Error("process not found", "pid", input.PID, "signal", sig)
 					return KillProcessOutput{}, fmt.Errorf("[%s] process not found: pid %d", handler.ErrNotFound, input.PID)
 				}
 				if strings.Contains(stderr, "Operation not permitted") {
+					slog.Error("permission denied", "pid", input.PID, "signal", sig)
 					return KillProcessOutput{}, fmt.Errorf("[%s] permission denied: pid %d", handler.ErrPermission, input.PID)
 				}
+				slog.Error("kill failed", "pid", input.PID, "signal", sig, "error", stderr)
 				return KillProcessOutput{}, fmt.Errorf("[%s] kill failed: %s", handler.ErrAPIError, stderr)
 			}
 
+			slog.Info("signal sent", "pid", input.PID, "signal", sig)
 			return KillProcessOutput{
 				PID:    input.PID,
 				Signal: sig,
@@ -763,13 +768,17 @@ func main() {
 		Level: slog.LevelInfo,
 	})).With("service", "process-mcp"))
 
+	slog.Info("server starting", "name", "process-mcp", "version", "1.0.0")
+
 	reg := registry.NewToolRegistry(registry.Config{
 		Middleware: []registry.Middleware{
 			registry.AuditMiddleware(""),
 			registry.SafetyTierMiddleware(),
 		},
 	})
-	reg.RegisterModule(&ProcessModule{})
+	mod := &ProcessModule{}
+	reg.RegisterModule(mod)
+	slog.Info("tools registered", "module", mod.Name(), "count", len(mod.Tools()))
 
 	s := registry.NewMCPServer("process-mcp", "1.0.0")
 	reg.RegisterWithServer(s)
