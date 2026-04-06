@@ -1,11 +1,13 @@
 # process-mcp — Agent Instructions
 
-This repo still keeps its detailed repo guidance in [CLAUDE.md](CLAUDE.md). Read that file before making changes.
+> Canonical instructions: AGENTS.md
+
+Use this file as the canonical instruction surface for Codex-first repo guidance. [CLAUDE.md](CLAUDE.md) and [GEMINI.md](GEMINI.md) are compatibility mirrors.
 
 ## Working Rules
 
-- Treat [CLAUDE.md](CLAUDE.md) as the source of truth for build, test, architecture, and repo-specific conventions.
-- Keep [AGENTS.md](AGENTS.md), `GEMINI.md`, and [CLAUDE.md](CLAUDE.md) aligned when instructions change.
+- Use [CLAUDE.md](CLAUDE.md) for expanded compatibility detail that has not yet been folded back into this file.
+- Keep [AGENTS.md](AGENTS.md), [GEMINI.md](GEMINI.md), and [CLAUDE.md](CLAUDE.md) aligned when instructions change.
 
 ## Shared Research Repository
 

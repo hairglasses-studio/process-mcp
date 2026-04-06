@@ -1,5 +1,7 @@
 # process-mcp
 
+This repo uses [AGENTS.md](AGENTS.md) as the canonical instruction file. Treat this file as compatibility guidance for Claude-specific workflows.
+
 MCP server for Linux process management: process listing, process trees, signal delivery, port inspection, NVIDIA GPU status, and system information. Built with [mcpkit](https://github.com/hairglasses-studio/mcpkit).
 
 ## Build & Test

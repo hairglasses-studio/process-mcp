@@ -1,10 +1,10 @@
 # process-mcp — Gemini CLI Instructions
 
-This repo still keeps its detailed repo guidance in [CLAUDE.md](CLAUDE.md). Read that file before making changes.
+This repo uses [AGENTS.md](AGENTS.md) as the canonical instruction file. Treat this file as compatibility guidance for Gemini-specific workflows.
 
 ## Working Rules
 
-- Treat [CLAUDE.md](CLAUDE.md) as the source of truth for build, test, architecture, and repo-specific conventions.
+- Use [CLAUDE.md](CLAUDE.md) for expanded compatibility detail that has not yet been folded back into [AGENTS.md](AGENTS.md).
 - Keep `GEMINI.md`, [AGENTS.md](AGENTS.md), and [CLAUDE.md](CLAUDE.md) aligned when instructions change.
 
 ## Shared Research Repository
