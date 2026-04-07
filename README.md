@@ -8,6 +8,8 @@
 
 MCP server for Linux process inspection and debugging. Gives AI assistants like Codex or Claude Code the ability to list processes, investigate ports, check GPU status, and debug services — including composed tools that chain multiple operations into a single call.
 
+Canonical development lives in [`hairglasses-studio/dotfiles`](https://github.com/hairglasses-studio/dotfiles/tree/main/mcp/process-mcp) under `dotfiles/mcp/process-mcp`. The standalone [`process-mcp`](https://github.com/hairglasses-studio/process-mcp) repo is a publish mirror kept in parity for installation and discovery.
+
 Built with [mcpkit](https://github.com/hairglasses-studio/mcpkit) using stdio transport.
 
 ## Install

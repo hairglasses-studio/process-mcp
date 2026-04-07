@@ -1,5 +1,38 @@
-process-mcp
-go.sum
+# Claude Code / AI agent artifacts
+.claude/
+.codex/
+.gemini/
+.agents/
+!.agents/skills/
+
+# Environment secrets
 .env
 .env.*
 .envrc
+!.env.example
+!.env.*.example
+
+# Build artifacts
+process-mcp
+coverage.out
+cov.out
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Development artifacts
+.claude-audit-report*
+.claude-fix-report*
+HANDOFF.md
+
+# Ralph runtime
+.ralph/
+.rdloop_state.json
+.rdloop_cycle_*.progress.json
+.rdloop_debug_*.txt
+rdloop.log
+rdloop_*.log
+logs/

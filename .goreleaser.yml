@@ -1,18 +1,21 @@
 version: 2
+project_name: process-mcp
+
+before:
+  hooks:
+    - go mod tidy
 
 builds:
   - main: ./
     binary: process-mcp
     env:
       - CGO_ENABLED=0
-    goos:
-      - linux
-      - darwin
-    goarch:
-      - amd64
-      - arm64
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
     ldflags:
-      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}}
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.ShortCommit}}
 
 archives:
   - format: tar.gz
@@ -20,6 +23,7 @@ archives:
 
 checksum:
   name_template: checksums.txt
+  algorithm: sha256
 
 changelog:
   sort: asc
@@ -27,3 +31,8 @@ changelog:
     exclude:
       - "^docs:"
       - "^chore:"
+
+release:
+  github:
+    owner: hairglasses-studio
+    name: process-mcp
