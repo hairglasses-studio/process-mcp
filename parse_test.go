@@ -5,6 +5,42 @@ import (
 )
 
 // ---------------------------------------------------------------------------
+// isValidUnitName
+// ---------------------------------------------------------------------------
+
+func TestIsValidUnitName(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  bool
+	}{
+		{"simple service", "nginx.service", true},
+		{"timer unit", "backup.timer", true},
+		{"instance unit", "container@myapp.service", true},
+		{"dashed name", "foo-bar-baz.service", true},
+		{"underscored name", "my_app.service", true},
+		{"colon in name", "dbus-org.freedesktop.service", true},
+		{"empty string", "", false},
+		{"space in name", "my service.service", false},
+		{"semicolon injection", "foo;rm -rf /", false},
+		{"flag injection", "--user-unit=evil", false},
+		{"command substitution", "$(whoami).service", false},
+		{"backtick injection", "`id`.service", false},
+		{"pipe injection", "foo|bar.service", false},
+		{"newline injection", "foo\nbar.service", false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := isValidUnitName(tc.input)
+			if got != tc.want {
+				t.Errorf("isValidUnitName(%q) = %v, want %v", tc.input, got, tc.want)
+			}
+		})
+	}
+}
+
+// ---------------------------------------------------------------------------
 // parsePsLine
 // ---------------------------------------------------------------------------
 

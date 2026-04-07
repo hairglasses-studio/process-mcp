@@ -1,6 +1,6 @@
 # process-mcp
 
-> **Archived** -- This repo has been consolidated into [hairglasses-studio/dotfiles](https://github.com/hairglasses-studio/dotfiles) at `mcp/process-mcp/`. For continued updates, use the consolidated version.
+> **Mirror** -- Canonical development lives in [hairglasses-studio/dotfiles](https://github.com/hairglasses-studio/dotfiles) at `mcp/process-mcp/`. This repo is a publish mirror kept in parity for `go install` and MCP registry discovery.
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/hairglasses-studio/process-mcp.svg)](https://pkg.go.dev/github.com/hairglasses-studio/process-mcp)
 [![Go Report Card](https://goreportcard.com/badge/github.com/hairglasses-studio/process-mcp)](https://goreportcard.com/report/github.com/hairglasses-studio/process-mcp)
@@ -10,8 +10,6 @@
 [![Glama](https://glama.ai/mcp/servers/hairglasses-studio/process-mcp/badges/score.svg)](https://glama.ai/mcp/servers/hairglasses-studio/process-mcp)
 
 MCP server for Linux process inspection and debugging. Gives AI assistants like Codex or Claude Code the ability to list processes, investigate ports, check GPU status, and debug services — including composed tools that chain multiple operations into a single call.
-
-Canonical development lives in [`hairglasses-studio/dotfiles`](https://github.com/hairglasses-studio/dotfiles/tree/main/mcp/process-mcp) under `dotfiles/mcp/process-mcp`. The standalone [`process-mcp`](https://github.com/hairglasses-studio/process-mcp) repo is a publish mirror kept in parity for installation and discovery.
 
 Built with [mcpkit](https://github.com/hairglasses-studio/mcpkit) using stdio transport.
 

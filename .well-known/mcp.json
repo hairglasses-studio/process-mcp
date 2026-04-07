@@ -9,8 +9,8 @@
   "transport": ["stdio"],
   "capabilities": {
     "tools": true,
-    "resources": false,
-    "prompts": false
+    "resources": true,
+    "prompts": true
   },
   "tools": [
     { "name": "ps_list", "description": "List processes sorted by CPU/mem/pid, filter by command substring" },

@@ -1,9 +1,19 @@
 package main
 
 import (
+	"regexp"
 	"strconv"
 	"strings"
 )
+
+// validUnitNameRe matches systemd unit names: alphanumeric, @, ., _, :, -.
+var validUnitNameRe = regexp.MustCompile(`^[a-zA-Z0-9@._:\-]+$`)
+
+// isValidUnitName returns true if name looks like a valid systemd unit name.
+// Used to prevent argument injection when passing unit names to shell commands.
+func isValidUnitName(name string) bool {
+	return name != "" && len(name) <= 256 && validUnitNameRe.MatchString(name)
+}
 
 // ---------------------------------------------------------------------------
 // Parsing helpers — extracted from handler closures for testability.

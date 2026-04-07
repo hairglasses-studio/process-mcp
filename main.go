@@ -477,7 +477,7 @@ func (m *ProcessModule) Tools() []registry.ToolDefinition {
 				result.SystemdUnit = extractSystemdUnit(unitOut)
 				result.SystemdStatus = unitOut
 			}
-			if result.SystemdUnit != "" {
+			if result.SystemdUnit != "" && isValidUnitName(result.SystemdUnit) {
 				logsOut, _, _ := runCmd("journalctl", "--user-unit", result.SystemdUnit, "-n", strconv.Itoa(logLines), "--no-pager")
 				result.RecentLogs = logsOut
 			}
@@ -494,6 +494,9 @@ func (m *ProcessModule) Tools() []registry.ToolDefinition {
 		func(_ context.Context, input InvestigateServiceInput) (InvestigateServiceOutput, error) {
 			if input.Unit == "" {
 				return InvestigateServiceOutput{}, fmt.Errorf("[%s] unit is required", handler.ErrInvalidParam)
+			}
+			if !isValidUnitName(input.Unit) {
+				return InvestigateServiceOutput{}, fmt.Errorf("[%s] invalid unit name %q", handler.ErrInvalidParam, input.Unit)
 			}
 			logLines := input.LogLines
 			if logLines <= 0 {
