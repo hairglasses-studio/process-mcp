@@ -1,9 +1,7 @@
 # Claude Code / AI agent artifacts
-.claude/*
-!.claude/settings.json
+.claude/
 .codex/
-.gemini/*
-!.gemini/config.yaml
+.gemini/
 .agents/
 !.agents/skills/
 
