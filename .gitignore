@@ -1,8 +1,11 @@
 # Claude Code / AI agent artifacts
-.claude/
-.codex/
-.gemini/
-.agents/
+.claude/*
+!.claude/settings.json
+.codex/*
+!.codex/config.toml
+.gemini/*
+!.gemini/settings.json
+.agents/*
 !.agents/skills/
 
 # Environment secrets
