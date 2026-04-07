@@ -1,6 +1,8 @@
 name: Codex Review
 
 on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
     inputs:
       pr_number:
@@ -17,26 +19,45 @@ permissions:
   pull-requests: write
   issues: write
 
+concurrency:
+  group: codex-review-${{ github.event.pull_request.number || github.event.issue.number || github.event.inputs.pr_number }}
+  cancel-in-progress: true
+
 jobs:
   codex-review:
     if: |
+      (
+        github.event_name == 'pull_request' &&
+        !github.event.pull_request.draft &&
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        github.actor != 'dependabot[bot]'
+      ) ||
       github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '@codex')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@codex'))
+      (
+        github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request &&
+        contains(github.event.comment.body, '@codex') &&
+        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+      ) ||
+      (
+        github.event_name == 'pull_request_review_comment' &&
+        contains(github.event.comment.body, '@codex') &&
+        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+      )
     runs-on: ubuntu-latest
     env:
       PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.pr_number || github.event_name == 'issue_comment' && github.event.issue.number || github.event.pull_request.number }}
     outputs:
       final_message: ${{ steps.run_codex.outputs.final-message }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           ref: refs/pull/${{ env.PR_NUMBER }}/merge
 
       - name: Pre-fetch PR refs
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "${{ github.event_name }}" = "issue_comment" ]; then
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "${{ github.event_name }}" = "issue_comment" ] || [ "${{ github.event_name }}" = "pull_request_review_comment" ]; then
             git fetch --no-tags origin +refs/pull/${{ env.PR_NUMBER }}/head
           else
             git fetch --no-tags origin \
@@ -70,17 +91,18 @@ jobs:
       pull-requests: write
     steps:
       - name: Report Codex feedback
-        uses: actions/github-script@v8
+        uses: actions/github-script@v7
         env:
           CODEX_FINAL_MESSAGE: ${{ needs.codex-review.outputs.final_message }}
         with:
           github-token: ${{ github.token }}
           script: |
+            const prNumber = context.payload.pull_request?.number
+              || context.payload.issue?.number
+              || Number(context.payload.inputs?.pr_number);
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: context.payload.pull_request
-                ? context.payload.pull_request.number
-                : context.payload.issue.number,
+              issue_number: prNumber,
               body: process.env.CODEX_FINAL_MESSAGE,
             });
