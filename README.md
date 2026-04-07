@@ -2,6 +2,9 @@
 
 > **Archived** -- This repo has been consolidated into [hairglasses-studio/dotfiles](https://github.com/hairglasses-studio/dotfiles) at `mcp/process-mcp/`. For continued updates, use the consolidated version.
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/hairglasses-studio/process-mcp.svg)](https://pkg.go.dev/github.com/hairglasses-studio/process-mcp)
+[![Go Report Card](https://goreportcard.com/badge/github.com/hairglasses-studio/process-mcp)](https://goreportcard.com/report/github.com/hairglasses-studio/process-mcp)
+[![CI](https://github.com/hairglasses-studio/process-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/hairglasses-studio/process-mcp/actions/workflows/ci.yml)
 [![Go](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go&logoColor=white)](https://go.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Glama](https://glama.ai/mcp/servers/hairglasses-studio/process-mcp/badges/score.svg)](https://glama.ai/mcp/servers/hairglasses-studio/process-mcp)
