@@ -1,11 +1,77 @@
+# golangci-lint v2 — shared configuration for hairglasses-studio Go repos.
+# Symlink: ln -sf ../../dotfiles/make/golangci.yml .golangci.yml
+# Run: golangci-lint run ./...
+
 version: "2"
-linters:
-  enable:
-    - errcheck
-    - gosimple
-    - govet
-    - ineffassign
-    - staticcheck
-    - unused
+
 run:
   timeout: 5m
+  tests: true
+
+linters:
+  default: none
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - unused
+    - ineffassign
+    - gocritic
+    - misspell
+    - gosec
+
+  settings:
+    errcheck:
+      exclude-functions:
+        - fmt.Fprintf
+        - fmt.Fprintln
+        - fmt.Printf
+        - fmt.Println
+        - (io.Closer).Close
+        - (net/http.ResponseWriter).Write
+        - (*database/sql.Rows).Close
+
+    govet:
+      enable:
+        - assign
+        - bools
+        - buildtag
+        - composites
+        - copylocks
+        - httpresponse
+        - nilfunc
+        - printf
+        - stringintconv
+        - tests
+        - unmarshal
+        - unreachable
+        - unusedresult
+
+    gosec:
+      excludes:
+        - G104
+        - G107
+        - G115
+        - G204
+        - G304
+        - G306
+
+    staticcheck:
+      checks:
+        - "all"
+        - "-SA1019"
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - errcheck
+        - gosec
+
+  exclude-dirs:
+    - vendor
+    - node_modules
+    - dist
