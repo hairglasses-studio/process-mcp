@@ -5,7 +5,7 @@
 // Usage:
 //
 //	process-mcp
-package process
+package main
 
 import (
 	"bytes"
@@ -559,10 +559,10 @@ func (m *ProcessModule) Tools() []registry.ToolDefinition {
 }
 
 // ---------------------------------------------------------------------------
-// Setup
+// main
 // ---------------------------------------------------------------------------
 
-func Setup() (*registry.ToolRegistry, *registry.MCPServer) {
+func main() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{
 		Level: slog.LevelInfo,
 	})).With("service", "process-mcp"))
@@ -584,5 +584,8 @@ func Setup() (*registry.ToolRegistry, *registry.MCPServer) {
 	buildProcessResourceRegistry().RegisterWithServer(s)
 	buildProcessPromptRegistry().RegisterWithServer(s)
 
-	return reg, s
+	if err := registry.ServeAuto(s); err != nil {
+		slog.Error("server stopped", "error", err)
+		os.Exit(1)
+	}
 }

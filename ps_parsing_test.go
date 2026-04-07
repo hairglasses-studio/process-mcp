@@ -1,4 +1,4 @@
-package process
+package main
 
 import (
 	"context"
@@ -64,10 +64,10 @@ func TestPsList_LimitBoundaries(t *testing.T) {
 	td := findTool(t, "ps_list")
 
 	tests := []struct {
-		name    string
-		limit   int
-		maxWant int
-		minWant int
+		name     string
+		limit    int
+		maxWant  int
+		minWant  int
 	}{
 		{"limit_1", 1, 1, 0},
 		{"limit_0_defaults_20", 0, 20, 1},

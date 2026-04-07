@@ -1,4 +1,4 @@
-package process
+package main
 
 import (
 	"testing"
@@ -83,7 +83,7 @@ func TestParsePsLine(t *testing.T) {
 			name:    "non-numeric PID",
 			line:    "root    abc  0.0  0.1  21448 12884 ?        Ss   Apr01   0:03 /sbin/init",
 			wantOK:  true,
-			wantPID: 0, // strconv.Atoi returns 0 for invalid input
+			wantPID: 0,  // strconv.Atoi returns 0 for invalid input
 			wantCPU: 0.0,
 			wantCmd: "/sbin/init",
 		},
