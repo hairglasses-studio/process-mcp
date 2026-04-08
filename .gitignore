@@ -3,7 +3,12 @@
 .codex/
 .gemini/
 .agents/
+!.claude/
 !.agents/skills/
+!.agents/skills/**
+!.claude/skills/
+!.claude/skills/**
+!.agents/
 
 # Environment secrets
 .env

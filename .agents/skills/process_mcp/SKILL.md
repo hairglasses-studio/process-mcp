@@ -1,0 +1,16 @@
+---
+name: process_mcp
+description: 'Operate the process-mcp server for local process inspection and control. Use this when changing process-oriented MCP tools, discovery, or server behavior in this repo, not for unrelated shell or desktop automation.'
+---
+
+# process-mcp
+
+Use this repo for the MCP layer around local process inspection, filtering, and controlled process actions.
+
+Focus paths:
+- `cmd/`
+- `internal/`
+- `AGENTS.md`
+- `README.md`
+
+Keep the tool surface explicit about read-only versus write behavior and avoid overlapping with tmux, systemd, or dotfiles control planes unless the boundary is documented.
