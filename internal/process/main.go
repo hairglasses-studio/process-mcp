@@ -18,6 +18,7 @@ import (
 	"strings"
 
 	"github.com/hairglasses-studio/mcpkit/handler"
+	"github.com/hairglasses-studio/mcpkit/middleware/gate"
 	"github.com/hairglasses-studio/mcpkit/registry"
 )
 
@@ -579,6 +580,7 @@ func Setup() (*registry.ToolRegistry, *registry.MCPServer) {
 
 	reg := registry.NewToolRegistry(registry.Config{
 		Middleware: []registry.Middleware{
+			gate.Middleware(gate.Config{Gate: gate.PauseWrites}),
 			registry.AuditMiddleware(""),
 			registry.SafetyTierMiddleware(),
 		},
