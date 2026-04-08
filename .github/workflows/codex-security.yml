@@ -19,7 +19,7 @@ jobs:
     outputs:
       final_message: ${{ steps.run_codex.outputs.final-message }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           ref: refs/pull/${{ github.event.inputs.pr_number }}/merge
@@ -59,7 +59,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Report Codex security feedback
-        uses: actions/github-script@v8
+        uses: actions/github-script@v7
         env:
           CODEX_FINAL_MESSAGE: ${{ needs.security-review.outputs.final_message }}
         with:

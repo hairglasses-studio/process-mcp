@@ -71,7 +71,7 @@ Add to your MCP client config (for example Codex or Claude Code):
 | `investigate_port` | Port -> process -> tree -> systemd unit -> logs. Replaces 4+ sequential calls. |
 | `investigate_service` | Systemd status -> process info -> ports -> logs. Replaces 3-4 sequential calls. |
 
-## Composed Tools
+## Usage Examples
 
 The composed debugging tools are the key differentiator. Instead of manually chaining tool calls to investigate an issue, a single call gathers all relevant context:
 
