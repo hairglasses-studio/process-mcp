@@ -269,6 +269,7 @@ func (m *ProcessModule) Tools() []registry.ToolDefinition {
 			return PsListOutput{Processes: processes, Total: len(processes)}, nil
 		},
 	)
+	psList.Category = "process"
 	psList.SearchTerms = []string{"top processes", "running processes", "cpu usage", "memory usage"}
 
 	psTree := handler.TypedHandler[PsTreeInput, PsTreeOutput](
@@ -303,6 +304,7 @@ func (m *ProcessModule) Tools() []registry.ToolDefinition {
 			return PsTreeOutput{PID: input.PID, Tree: strings.Join(filtered, "\n")}, nil
 		},
 	)
+	psTree.Category = "process"
 	psTree.MaxResultChars = 8000
 
 	killProcess := handler.TypedHandler[KillProcessInput, KillProcessOutput](
@@ -346,6 +348,7 @@ func (m *ProcessModule) Tools() []registry.ToolDefinition {
 			}, nil
 		},
 	)
+	killProcess.Category = "process"
 	killProcess.IsWrite = true
 
 	portList := handler.TypedHandler[PortListInput, PortListOutput](
@@ -364,6 +367,7 @@ func (m *ProcessModule) Tools() []registry.ToolDefinition {
 			return PortListOutput{Ports: ports, Total: len(ports)}, nil
 		},
 	)
+	portList.Category = "network"
 	portList.SearchTerms = []string{"open ports", "listening ports", "network sockets"}
 
 	gpuStatus := handler.TypedHandler[GpuStatusInput, GpuStatusOutput](
@@ -400,6 +404,7 @@ func (m *ProcessModule) Tools() []registry.ToolDefinition {
 			return result, nil
 		},
 	)
+	gpuStatus.Category = "gpu"
 	gpuStatus.SearchTerms = []string{"nvidia", "gpu usage", "gpu processes", "cuda processes"}
 
 	systemInfo := handler.TypedHandler[SystemInfoInput, SystemInfoOutput](
@@ -431,6 +436,7 @@ func (m *ProcessModule) Tools() []registry.ToolDefinition {
 			return info, nil
 		},
 	)
+	systemInfo.Category = "system"
 
 	investigatePort := handler.TypedHandler[InvestigatePortInput, InvestigatePortOutput](
 		"investigate_port",
@@ -485,6 +491,7 @@ func (m *ProcessModule) Tools() []registry.ToolDefinition {
 			return result, nil
 		},
 	)
+	investigatePort.Category = "investigation"
 	investigatePort.MaxResultChars = 9000
 	investigatePort.SearchTerms = []string{"debug port", "what is using this port", "port investigation"}
 
@@ -543,6 +550,7 @@ func (m *ProcessModule) Tools() []registry.ToolDefinition {
 			return result, nil
 		},
 	)
+	investigateService.Category = "investigation"
 	investigateService.MaxResultChars = 9000
 	investigateService.SearchTerms = []string{"debug service", "service investigation", "why is my service failing"}
 
