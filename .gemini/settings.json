@@ -6,5 +6,18 @@
       "GEMINI.md"
     ]
   },
-  "mcpServers": {}
+  "mcp": {
+    "allowed": [
+      "process-mcp"
+    ]
+  },
+  "mcpServers": {
+    "process-mcp": {
+      "args": [
+        "./scripts/run-process-mcp.sh"
+      ],
+      "command": "bash",
+      "cwd": "."
+    }
+  }
 }

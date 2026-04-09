@@ -22,4 +22,5 @@ coverage:
 	GOWORK=off go test ./... -count=1 -coverprofile=coverage.out
 	go tool cover -func=coverage.out
 
--include $(HOME)/hairglasses-studio/dotfiles/make/pipeline.mk
+HG_PIPELINE_MK ?= $(or $(wildcard $(abspath $(CURDIR)/../dotfiles/make/pipeline.mk)),$(wildcard $(HOME)/hairglasses-studio/dotfiles/make/pipeline.mk))
+-include $(HG_PIPELINE_MK)
