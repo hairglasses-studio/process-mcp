@@ -524,7 +524,14 @@ func (m *ProcessModule) Tools() []registry.ToolDefinition {
 				statusArgs = append(statusArgs, scope)
 			}
 			statusArgs = append(statusArgs, "show", "--property=ActiveState,SubState,MainPID", input.Unit)
-			statusOut, _, _ := runCmd("systemctl", statusArgs...)
+			statusOut, statusErrOut, statusErr := runCmd("systemctl", statusArgs...)
+			if !input.System && statusErr != nil &&
+				(strings.Contains(statusErrOut, "Failed to connect to user scope bus") ||
+					strings.Contains(statusErrOut, "$DBUS_SESSION_BUS_ADDRESS") ||
+					strings.Contains(statusErrOut, "$XDG_RUNTIME_DIR")) {
+				statusOut, _, _ = runCmd("systemctl", "show", "--property=ActiveState,SubState,MainPID", input.Unit)
+				journalFlag = "-u"
+			}
 			props := parseSystemdProperties(statusOut)
 			result.ActiveState = props["ActiveState"]
 			result.SubState = props["SubState"]
