@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "process-mcp": {
+      "command": "bash",
+      "args": ["./scripts/run-process-mcp.sh"],
+      "cwd": "."
+    }
+  }
+}

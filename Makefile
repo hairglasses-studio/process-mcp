@@ -1,13 +1,16 @@
-.PHONY: build test vet lint check coverage
+.PHONY: build build-a2a test vet lint check coverage
 
 build:
-	go build -o process-mcp ./...
+	GOWORK=off go build -o process-mcp ./cmd/process-mcp
+
+build-a2a:
+	GOWORK=off go build -o process-a2a ./cmd/process-a2a
 
 test:
-	go test ./... -count=1
+	GOWORK=off go test ./... -count=1
 
 vet:
-	go vet ./...
+	GOWORK=off go vet ./...
 
 lint:
 	@command -v golangci-lint >/dev/null 2>&1 && golangci-lint run ./... || \
@@ -16,7 +19,7 @@ lint:
 check: build vet test
 
 coverage:
-	go test ./... -count=1 -coverprofile=coverage.out
+	GOWORK=off go test ./... -count=1 -coverprofile=coverage.out
 	go tool cover -func=coverage.out
 
 -include $(HOME)/hairglasses-studio/dotfiles/make/pipeline.mk
