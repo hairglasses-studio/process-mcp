@@ -18,7 +18,7 @@
 !.env.*.example
 
 # Build artifacts
-process-mcp
+/process-mcp
 coverage.out
 cov.out
 
