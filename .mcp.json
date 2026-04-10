@@ -2,8 +2,7 @@
   "mcpServers": {
     "process-mcp": {
       "command": "bash",
-      "args": ["./scripts/run-process-mcp.sh"],
-      "cwd": "."
+      "args": ["-lc", "exec ./scripts/run-process-mcp.sh"]
     }
   }
 }

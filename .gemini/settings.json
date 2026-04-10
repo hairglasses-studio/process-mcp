@@ -14,10 +14,10 @@
   "mcpServers": {
     "process-mcp": {
       "args": [
-        "./scripts/run-process-mcp.sh"
+        "-lc",
+        "exec ./scripts/run-process-mcp.sh"
       ],
-      "command": "bash",
-      "cwd": "."
+      "command": "bash"
     }
   }
 }
